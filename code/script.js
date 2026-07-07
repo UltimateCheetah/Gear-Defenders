@@ -181,7 +181,11 @@ function resetCS() {
 /* ══════════════════════════════════════════════════════════
    NETWORK
 ══════════════════════════════════════════════════════════ */
-let peer = null, netConn = null;
+const SERVER_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+  ? 'ws://localhost:3000'
+  : 'wss://gear-defenders-server.onrender.com';
+
+let netWs = null;
 let netRole = null;   // "host" | "guest" | null
 let netReady = false;
 let hostBroadcastInterval = null;
@@ -224,33 +228,36 @@ function genCode() {
   for (let i = 0; i < 3; i++) s += c[Math.floor(Math.random() * c.length)];
   return s;
 }
-function loadPeerJS(cb) {
-  if (typeof Peer !== "undefined") { cb(); return; }
-  const s = document.createElement("script");
-  s.src = "https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js";
-  s.onload = cb;
-  s.onerror = () => setHostStatus("Failed to load networking library.", "err");
-  document.head.appendChild(s);
-}
-function beginHosting()  { loadPeerJS(_beginHosting); }
-function _beginHosting() {
+function beginHosting() {
   destroyNet();
   setHostStatus("Generating room…", "");
   document.getElementById("hostCodeDisplay").textContent = "—";
-  const code = genCode();
-  peer = new Peer("gd-" + code.replace("-",""), { debug:0, config:{ iceServers:[
-    { urls:"stun:stun.l.google.com:19302" }, { urls:"stun:stun1.l.google.com:19302" }
-  ]}});
-  peer.on("open", () => {
-    document.getElementById("hostCodeDisplay").textContent = code;
-    setHostStatus("Waiting for opponent… Share your code!", "wait");
-  });
-  peer.on("error", e => { setHostStatus("Connection error. Try again.", "err"); console.warn(e); });
-  peer.on("connection", conn => {
-    netConn = conn; netRole = "host"; setupConn(conn);
-    setHostStatus("Opponent connected! Choose your character…", "ok");
-    setTimeout(() => go("characterScreen"), 900);
-  });
+  netWs = new WebSocket(SERVER_URL);
+  netWs.onopen = () => {
+    netWs.send(JSON.stringify({ type: 'createRoom' }));
+  };
+  netWs.onmessage = (evt) => {
+    const msg = JSON.parse(evt.data);
+    if (msg.type === 'roomCreated') {
+      netRole = "host";
+      document.getElementById("hostCodeDisplay").textContent = msg.code;
+      setHostStatus("Waiting for opponent… Share your code!", "wait");
+    } else if (msg.type === 'guestConnected') {
+      setHostStatus("Opponent connected! Choose your character…", "ok");
+      setTimeout(() => go("characterScreen"), 900);
+    } else if (msg.type === 'error') {
+      setHostStatus(msg.message || "Connection error. Try again.", "err");
+    } else {
+      onNetData(msg);
+    }
+  };
+  netWs.onerror = () => { setHostStatus("Connection error. Try again.", "err"); };
+  netWs.onclose = () => {
+    if (document.getElementById("battleScreen").classList.contains("active")) {
+      alert("Connection lost."); returnToMenu();
+    }
+    netReady = false; netWs = null;
+  };
 }
 function resetJoinPanel() {
   document.getElementById("joinCodeInput").value = "";
@@ -262,37 +269,54 @@ function doJoinGame() {
   const raw = document.getElementById("joinCodeInput").value.trim().toUpperCase();
   const code = raw.replace(/[^A-Z0-9]/g, "");
   if (code.length < 6) { setJoinStatus("Enter a valid room code", "err"); return; }
-  setJoinStatus("Connecting…", "wait"); loadPeerJS(() => _doJoinGame(code));
-}
-function _doJoinGame(code) {
+  setJoinStatus("Connecting…", "wait");
   destroyNet();
   const btn = document.getElementById("joinActionBtn");
   btn.disabled = true; btn.textContent = "Connecting…";
-  peer = new Peer(undefined, { debug:0, config:{ iceServers:[
-    { urls:"stun:stun.l.google.com:19302" }, { urls:"stun:stun1.l.google.com:19302" }
-  ]}});
-  peer.on("open", () => {
-    const hostId = "gd-" + code.slice(0,3) + code.slice(3,6);
-    const conn = peer.connect(hostId, { reliable:true, serialization:"json" });
-    netConn = conn; netRole = "guest"; setupConn(conn);
-    conn.on("open",  () => setJoinStatus("Connected! Waiting for host…", "ok"));
-    conn.on("error", e  => { setJoinStatus("Could not connect. Check the code.", "err"); console.warn(e); });
-  });
-  peer.on("error", e => {
+  netWs = new WebSocket(SERVER_URL);
+  netWs.onopen = () => {
+    netWs.send(JSON.stringify({ type: 'joinRoom', code }));
+  };
+  netWs.onmessage = (evt) => {
+    const msg = JSON.parse(evt.data);
+    if (msg.type === 'roomJoined') {
+      netRole = "guest";
+      setJoinStatus("Connected! Waiting for host…", "ok");
+    } else if (msg.type === 'error') {
+      setJoinStatus(msg.message || "Could not connect. Check the code.", "err");
+      btn.disabled = false; btn.textContent = "Connect";
+    } else if (msg.type === 'opponentDisconnected') {
+      if (document.getElementById("battleScreen").classList.contains("active")) {
+        alert("Opponent disconnected."); returnToMenu();
+      }
+      netReady = false; netWs = null;
+    } else {
+      onNetData(msg);
+    }
+  };
+  netWs.onerror = () => {
     setJoinStatus("Could not connect. Check the code.", "err");
     btn.disabled = false; btn.textContent = "Connect";
-    console.warn(e);
-  });
-}
-function setupConn(conn) {
-  conn.on("data", onNetData);
-  conn.on("close", () => {
+  };
+  netWs.onclose = () => {
     if (document.getElementById("battleScreen").classList.contains("active")) {
-      alert("Opponent disconnected."); returnToMenu();
+      alert("Connection lost."); returnToMenu();
     }
-    netReady = false; netConn = null;
-  });
-  conn.on("error", e => console.warn("conn error", e));
+    netReady = false; netWs = null;
+  };
+}
+function setupConn() {
+  netWs.onmessage = (evt) => {
+    const msg = JSON.parse(evt.data);
+    if (msg.type === 'opponentDisconnected') {
+      if (document.getElementById("battleScreen").classList.contains("active")) {
+        alert("Opponent disconnected."); returnToMenu();
+      }
+      netReady = false; netWs = null;
+    } else {
+      onNetData(msg);
+    }
+  };
 }
 
 /* ── Net message handler ── */
@@ -359,7 +383,9 @@ function onNetData(msg) {
 }
 
 function sendNet(obj) {
-  if (netConn && netConn.open) { try { netConn.send(obj); } catch(e) {} }
+  if (netWs && netWs.readyState === WebSocket.OPEN) {
+    try { netWs.send(JSON.stringify(obj)); } catch(e) {}
+  }
 }
 
 /* Lobby UI helpers */
@@ -377,8 +403,13 @@ function cancelLobby() { destroyNet(); go("mainMenu"); }
 function leaveLobby()  { destroyNet(); go("mainMenu"); }
 function destroyNet() {
   if (hostBroadcastInterval) { clearInterval(hostBroadcastInterval); hostBroadcastInterval = null; }
-  if (netConn) { try { netConn.close(); } catch(e) {} netConn = null; }
-  if (peer)    { try { peer.destroy();  } catch(e) {} peer    = null; }
+  if (netWs) {
+    try {
+      if (netWs.readyState === WebSocket.OPEN) netWs.send(JSON.stringify({ type: 'disconnect' }));
+      netWs.close();
+    } catch(e) {}
+    netWs = null;
+  }
   netRole = null; netReady = false;
   hostSideGuest.left = false; hostSideGuest.right = false; hostSideGuest.block = false;
   hostSideGuest.jumps = []; hostSideGuest.attacks = [];
