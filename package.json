@@ -1,0 +1,9 @@
+{
+  "name": "gear-defenders",
+  "version": "1.0.0",
+  "description": "Gear Defenders - A 2D fighting game with online multiplayer",
+  "scripts": {
+    "start": "node server/server.js",
+    "server": "node server/server.js"
+  }
+}
