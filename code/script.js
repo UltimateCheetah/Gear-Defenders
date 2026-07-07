@@ -183,7 +183,7 @@ function resetCS() {
 ══════════════════════════════════════════════════════════ */
 const SERVER_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
   ? 'ws://localhost:3000'
-  : 'wss://gear-defenders-server.onrender.com';
+  : 'wss://gear-defenders.onrender.com';
 
 let netWs = null;
 let netRole = null;   // "host" | "guest" | null
