@@ -137,16 +137,16 @@ function go(id) {
    CHARACTERS
 ══════════════════════════════════════════════════════════ */
 const characters = [
-  { name:"Luna",    image:"https://i.postimg.cc/W19QBdwx/IMG-7179.jpg" },
-  { name:"Sara",    image:"https://i.postimg.cc/vTgBnRHD/IMG-7168.jpg" },
-  { name:"Ace",     image:"https://i.postimg.cc/T1jRchDg/ace-portrait.png" },
-  { name:"Blaze",   image:"https://i.postimg.cc/KcDF9vCz/blaze.jpg" },
-  { name:"Vanessa", image:"https://i.postimg.cc/wBCbzLR8/IMG-7177.jpg" },
-  { name:"Carl",    image:"https://i.postimg.cc/bYtSdbG5/carl.jpg" },
-  { name:"Brian",   image:"https://i.postimg.cc/dQHrTvn9/IMG-7174.jpg" },
-  { name:"Ed",      image:"https://i.postimg.cc/D0BgSX0Q/IMG-7178.jpg" },
-  { name:"Markus",  image:"https://i.postimg.cc/TY1jkhh9/IMG-7171.jpg" },
-  { name:"Amelia",  image:"https://i.postimg.cc/2ywHntch/IMG-7176.jpg" },
+  { name:"Luna",    image:"../assets/images/luna.jpg" },
+  { name:"Sara",    image:"../assets/images/sara.jpg" },
+  { name:"Ace",     image:"../assets/images/ace.png" },
+  { name:"Blaze",   image:"../assets/images/blaze.jpg" },
+  { name:"Vanessa", image:"../assets/images/vanessa.jpg" },
+  { name:"Carl",    image:"../assets/images/carl.jpg" },
+  { name:"Brian",   image:"../assets/images/brian.jpg" },
+  { name:"Ed",      image:"../assets/images/ed.jpg" },
+  { name:"Markus",  image:"../assets/images/markus.jpg" },
+  { name:"Amelia",  image:"../assets/images/amelia.jpg" },
 ];
 let curPlayer = 1, selChar = null, p1Char = null, p2Char = null;
 const grid = document.getElementById("charGrid");
