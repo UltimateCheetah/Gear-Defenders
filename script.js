@@ -137,16 +137,16 @@ function go(id) {
    CHARACTERS
 ══════════════════════════════════════════════════════════ */
 const characters = [
-  { name:"Luna",    image:"../assets/images/luna.jpg" },
-  { name:"Sara",    image:"../assets/images/sara.jpg" },
-  { name:"Ace",     image:"../assets/images/ace.png" },
-  { name:"Blaze",   image:"../assets/images/blaze.jpg" },
-  { name:"Vanessa", image:"../assets/images/vanessa.jpg" },
-  { name:"Carl",    image:"../assets/images/carl.jpg" },
-  { name:"Brian",   image:"../assets/images/brian.jpg" },
-  { name:"Ed",      image:"../assets/images/ed.jpg" },
-  { name:"Markus",  image:"../assets/images/markus.jpg" },
-  { name:"Amelia",  image:"../assets/images/amelia.jpg" },
+  { name:"Luna",    image:"assets/images/luna.jpg" },
+  { name:"Sara",    image:"assets/images/sara.jpg" },
+  { name:"Ace",     image:"assets/images/ace.png" },
+  { name:"Blaze",   image:"assets/images/blaze.jpg" },
+  { name:"Vanessa", image:"assets/images/vanessa.jpg" },
+  { name:"Carl",    image:"assets/images/carl.jpg" },
+  { name:"Brian",   image:"assets/images/brian.jpg" },
+  { name:"Ed",      image:"assets/images/ed.jpg" },
+  { name:"Markus",  image:"assets/images/markus.jpg" },
+  { name:"Amelia",  image:"assets/images/amelia.jpg" },
 ];
 let curPlayer = 1, selChar = null, p1Char = null, p2Char = null;
 const grid = document.getElementById("charGrid");
